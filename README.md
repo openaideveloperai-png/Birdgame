@@ -1,16 +1,16 @@
 # PARALLAX
 
-A playable first-person 3D puzzle-engine sketch inspired by perspective-based spatial puzzle games.
+A playable third-person 3D puzzle-engine sketch inspired by perspective-based spatial puzzle games.
 
 ## What is in the prototype
 
-- Mouse-look and WASD first-person movement
-- Lightweight player/world collision
+- Over-the-shoulder orbit camera and WASD movement with a visible player avatar
+- Lightweight player/world collision and momentum-based cube throwing
 - Raycast object interaction
 - Perspective-dependent cube scaling: move a held cube farther away to make it physically larger
-- A pressure-plate and animated exit-door objective
+- A scale-sensitive receiver and animated exit-door objective
 - A spatial fold gate that relocates the player
-- Responsive HUD, onboarding, win state, and restart flow
+- Layered warm/cool lighting, soft shadows, responsive HUD, onboarding, win state, and restart flow
 
 ## Run it
 
@@ -27,9 +27,10 @@ Then open the local address and click **Enter the chamber**.
 | Input | Action |
 | --- | --- |
 | WASD / Arrow keys | Move |
-| Mouse | Look |
+| Mouse | Orbit camera |
 | E | Grab or drop the highlighted cube |
 | Mouse wheel | Push or pull a held cube, changing its physical scale |
+| Left click | Throw a held cube with momentum |
 | Shift | Sprint |
 | Esc | Release the cursor |
 

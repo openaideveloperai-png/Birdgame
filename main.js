@@ -19,25 +19,32 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.28;
+renderer.shadowMap.autoUpdate = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0c1012);
-scene.fog = new THREE.FogExp2(0x111719, 0.026);
+scene.background = new THREE.Color(0x070b0f);
+scene.fog = new THREE.FogExp2(0x0c1418, 0.022);
 
 const camera = new THREE.PerspectiveCamera(70, 1, 0.08, 120);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 
-const hemi = new THREE.HemisphereLight(0xcbd9d4, 0x181c1c, 1.7);
+const hemi = new THREE.HemisphereLight(0xb9d7df, 0x101216, 0.75);
 scene.add(hemi);
-const keyLight = new THREE.DirectionalLight(0xffedd0, 2.4);
-keyLight.position.set(-7, 13, 4);
+scene.add(new THREE.AmbientLight(0x4d6875, 0.38));
+const keyLight = new THREE.DirectionalLight(0xffe3b2, 3.1);
+keyLight.position.set(-8, 15, 6);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
 keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -24;
 keyLight.shadow.camera.right = keyLight.shadow.camera.top = 24;
+keyLight.shadow.bias = -0.00035;
+keyLight.shadow.normalBias = 0.025;
 scene.add(keyLight);
+const coolRim = new THREE.DirectionalLight(0x66c7ff, 1.35);
+coolRim.position.set(9, 7, -18);
+scene.add(coolRim);
 
 const materials = {
   concrete: new THREE.MeshStandardMaterial({ color: 0x747a75, roughness: 0.92, metalness: 0.04 }),
@@ -95,10 +102,15 @@ for (const z of [9, 1, -7, -15, -23]) {
 }
 for (let z = 8; z > -24; z -= 2) strip([0, 0.04, z], [0.12, 0.03, 1.05]);
 for (const x of [-8, 8]) {
-  const lamp = new THREE.PointLight(0xffaa22, 6, 14, 2);
-  lamp.position.set(x, 8.6, -5);
-  room.add(lamp);
-  strip([x, 9.55, -5], [1.5, 0.08, 0.08], materials.amber);
+  for (const z of [5, -7, -19]) {
+    const lamp = new THREE.SpotLight(0xffb64d, 42, 18, Math.PI / 4.8, 0.58, 1.35);
+    lamp.position.set(x, 9.2, z);
+    lamp.target.position.set(x * 0.72, 0, z - 1.5);
+    lamp.castShadow = z === -7;
+    lamp.shadow.mapSize.set(512, 512);
+    room.add(lamp, lamp.target);
+    strip([x, 9.55, z], [1.5, 0.08, 0.08], materials.amber);
+  }
 }
 
 // Observation window.
@@ -170,6 +182,23 @@ exitOrb.position.set(0, 3.2, -36);
 exitOrb.castShadow = true;
 scene.add(exitOrb);
 
+// A visible player rig anchors the third-person camera and casts a readable silhouette.
+const player = new THREE.Group();
+const suit = new THREE.MeshStandardMaterial({ color: 0x26343b, roughness: 0.5, metalness: 0.35 });
+const visor = new THREE.MeshStandardMaterial({ color: 0x7ee7ff, emissive: 0x1588aa, emissiveIntensity: 2.6, roughness: 0.18 });
+const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, 0.72, 5, 10), suit);
+torso.position.y = 1.05;
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 18, 14), suit);
+head.position.y = 1.82;
+const face = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.08), visor);
+face.position.set(0, 1.85, -0.29);
+for (const part of [torso, head, face]) {
+  part.castShadow = true;
+  part.receiveShadow = true;
+  player.add(part);
+}
+scene.add(player);
+
 const state = {
   active: false,
   complete: false,
@@ -181,11 +210,13 @@ const state = {
   keys: new Set(),
   onPlate: false,
   foldCooldown: 0,
+  throwCooldown: 0,
 };
 
 const raycaster = new THREE.Raycaster();
 const center = new THREE.Vector2(0, 0);
 const playerRadius = 0.42;
+const cubeVelocity = new THREE.Vector3();
 let focused = null;
 let toastTimer;
 
@@ -214,8 +245,17 @@ function blockedAt(position) {
 }
 
 function setCamera() {
-  camera.position.copy(state.position);
-  camera.rotation.set(state.pitch, state.yaw, 0);
+  player.position.set(state.position.x, 0, state.position.z);
+  player.rotation.y = state.yaw;
+  const target = state.position.clone().add(new THREE.Vector3(0, 0.15, 0));
+  const orbitDistance = 5.8;
+  const horizontal = Math.cos(state.pitch) * orbitDistance;
+  camera.position.set(
+    target.x + Math.sin(state.yaw) * horizontal,
+    target.y + 2.05 + Math.sin(-state.pitch) * 3.6,
+    target.z + Math.cos(state.yaw) * horizontal
+  );
+  camera.lookAt(target);
 }
 
 function attemptMove(delta) {
@@ -238,13 +278,18 @@ function updateMovement(dt) {
   const right = new THREE.Vector3(Math.cos(state.yaw), 0, -Math.sin(state.yaw));
   const delta = forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x)).multiplyScalar(speed * dt);
   attemptMove(delta);
+  if (input.lengthSq() > 0) {
+    const targetFacing = Math.atan2(-delta.x, -delta.z);
+    player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, targetFacing, 1 - Math.exp(-12 * dt));
+  }
 }
 
 function updateFocus() {
   if (state.held || !state.active) {
     focused = null;
   } else {
-    raycaster.setFromCamera(center, camera);
+    const interactionDirection = new THREE.Vector3(-Math.sin(state.yaw), 0, -Math.cos(state.yaw));
+    raycaster.set(state.position, interactionDirection);
     const hits = raycaster.intersectObjects(interactables, false);
     focused = hits.length && hits[0].distance < 7 ? cube : null;
   }
@@ -256,14 +301,16 @@ function grabOrDrop() {
   if (!state.active) return;
   if (state.held) {
     state.held = null;
+    cubeVelocity.set(0, 0, 0);
     heldReadout.classList.remove('visible');
     showToast('OBJECT RELEASED');
     return;
   }
   if (focused) {
     state.held = focused;
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    state.holdDistance = THREE.MathUtils.clamp(focused.position.clone().sub(camera.position).dot(forward), 2.2, 8);
+    cubeVelocity.set(0, 0, 0);
+    const forward = new THREE.Vector3(-Math.sin(state.yaw), 0, -Math.cos(state.yaw));
+    state.holdDistance = THREE.MathUtils.clamp(focused.position.clone().sub(state.position).dot(forward), 2.2, 8);
     heldReadout.classList.add('visible');
     showToast('PERSPECTIVE LOCK ACQUIRED');
   }
@@ -271,11 +318,11 @@ function grabOrDrop() {
 
 function updateHeld(dt) {
   if (!state.held) return;
-  const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-  const target = camera.position.clone().add(direction.multiplyScalar(state.holdDistance));
-  target.y = Math.max(target.y, 0.55);
+  const direction = new THREE.Vector3(-Math.sin(state.yaw), 0, -Math.cos(state.yaw));
+  const target = state.position.clone().add(direction.multiplyScalar(state.holdDistance));
+  target.y = Math.max(1.25, 0.8 * cube.userData.scale);
 
-  // Apparent-size conservation: distance from the camera becomes physical scale.
+  // Apparent-size conservation: distance from the player becomes physical scale.
   const desiredScale = THREE.MathUtils.clamp(state.holdDistance / 4.2, 0.42, 3.25);
   cube.userData.scale = THREE.MathUtils.damp(cube.userData.scale, desiredScale, 10, dt);
   cube.scale.setScalar(cube.userData.scale);
@@ -288,19 +335,48 @@ function updateHeld(dt) {
 function settleCube(dt) {
   if (state.held) return;
   const half = 0.8 * cube.userData.scale;
-  const targetY = half;
-  if (cube.position.y > targetY + 0.01) {
-    cube.userData.velocityY -= 18 * dt;
-    cube.position.y = Math.max(targetY, cube.position.y + cube.userData.velocityY * dt);
-  } else {
-    cube.position.y = targetY;
-    cube.userData.velocityY = 0;
+  cubeVelocity.y -= 18 * dt;
+  cube.position.addScaledVector(cubeVelocity, dt);
+  cubeVelocity.multiplyScalar(Math.exp(-1.7 * dt));
+
+  if (cube.position.y <= half) {
+    cube.position.y = half;
+    if (cubeVelocity.y < -2) cubeVelocity.y *= -0.24;
+    else cubeVelocity.y = 0;
+    cubeVelocity.x *= 0.82;
+    cubeVelocity.z *= 0.82;
   }
+  const xLimit = 11.1 - half;
+  const minZ = -38 + half;
+  const maxZ = 11.8 - half;
+  if (Math.abs(cube.position.x) > xLimit) {
+    cube.position.x = THREE.MathUtils.clamp(cube.position.x, -xLimit, xLimit);
+    cubeVelocity.x *= -0.35;
+  }
+  if (cube.position.z < minZ || cube.position.z > maxZ) {
+    cube.position.z = THREE.MathUtils.clamp(cube.position.z, minZ, maxZ);
+    cubeVelocity.z *= -0.35;
+  }
+  cube.rotation.x += cubeVelocity.z * dt * 0.35;
+  cube.rotation.z -= cubeVelocity.x * dt * 0.35;
+}
+
+function throwCube() {
+  if (!state.held || !state.active || state.throwCooldown > 0) return;
+  const direction = new THREE.Vector3(-Math.sin(state.yaw), 0.08, -Math.cos(state.yaw)).normalize();
+  state.held = null;
+  state.throwCooldown = 0.45;
+  cubeVelocity.copy(direction).multiplyScalar(10.5 / Math.sqrt(cube.userData.scale));
+  heldReadout.classList.remove('visible');
+  showToast('KINETIC RELEASE');
 }
 
 function updatePuzzle(dt) {
   const distanceToPlate = Math.hypot(cube.position.x - plate.position.x, cube.position.z - plate.position.z);
-  const nowOnPlate = !state.held && distanceToPlate < 2.05 && cube.position.y < 3.2;
+  const nearPlate = !state.held && distanceToPlate < 2.05 && cube.position.y < 3.2;
+  const nowOnPlate = nearPlate && cube.userData.scale >= 1.35;
+  if (nearPlate && !nowOnPlate && !state.onPlate) objectiveNode.textContent = 'Enlarge the cube to power the receiver';
+  if (!nearPlate && !doorOpen) objectiveNode.textContent = 'Place an enlarged cube on the receiver';
   if (nowOnPlate !== state.onPlate) {
     state.onPlate = nowOnPlate;
     if (nowOnPlate) {
@@ -315,6 +391,7 @@ function updatePuzzle(dt) {
   doorLine.position.y = door.position.y;
 
   state.foldCooldown = Math.max(0, state.foldCooldown - dt);
+  state.throwCooldown = Math.max(0, state.throwCooldown - dt);
   if (state.foldCooldown === 0 && Math.abs(state.position.x + 8.2) < 1.9 && Math.abs(state.position.z + 11) < 0.65) {
     state.position.set(8.2, 1.7, -7);
     state.yaw += Math.PI;
@@ -350,16 +427,18 @@ function reset() {
   state.complete = false;
   state.onPlate = false;
   state.foldCooldown = 0;
+  state.throwCooldown = 0;
   state.keys.clear();
   cube.position.set(-5.5, 0.85, 3);
   cube.rotation.set(0, 0, 0);
   cube.scale.setScalar(1);
   cube.userData.scale = 1;
   cube.userData.velocityY = 0;
+  cubeVelocity.set(0, 0, 0);
   doorOpen = false;
   door.position.y = 4.5;
   doorLine.position.y = 4.5;
-  objectiveNode.textContent = 'Place the cube on the receiver';
+  objectiveNode.textContent = 'Place an enlarged cube on the receiver';
   heldReadout.classList.remove('visible');
   start();
 }
@@ -382,6 +461,9 @@ document.addEventListener('keydown', (event) => {
   if (event.code === 'KeyE' && !event.repeat) grabOrDrop();
 });
 document.addEventListener('keyup', (event) => state.keys.delete(event.code));
+canvas.addEventListener('mousedown', (event) => {
+  if (event.button === 0 && state.held) throwCube();
+});
 canvas.addEventListener('wheel', (event) => {
   if (!state.held || !state.active) return;
   event.preventDefault();

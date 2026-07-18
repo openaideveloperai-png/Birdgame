@@ -21,10 +21,17 @@ test('core puzzle systems are present', () => {
   assert.match(script, /desiredScale/);
   assert.match(script, /function updatePuzzle/);
   assert.match(script, /SPATIAL FOLD TRAVERSED/);
+  assert.match(script, /function throwCube/);
+  assert.match(script, /cubeVelocity/);
+  assert.match(script, /cube\.userData\.scale >= 1\.35/);
 });
 
-test('interface includes guidance and responsive treatment', () => {
-  assert.match(html, /WHEEL.*Push \/ pull/);
+test('interface includes third-person guidance and responsive treatment', () => {
+  assert.match(html, /WHEEL.*Scale object/);
+  assert.match(html, /CLICK.*Throw object/);
   assert.match(html, /id="objective"/);
+  assert.match(html, /Third-person spatial puzzle game/);
   assert.match(css, /@media \(max-width: 650px\)/);
+  assert.match(script, /const player = new THREE\.Group/);
+  assert.match(script, /SpotLight/);
 });
