@@ -1,5 +1,5 @@
-# Skywing
+# Blacksite
 
-A compact WebGL bird-flight game built with Three.js. Open `index.html` through any static web server, then press **Space**, **Up**, or tap/click to flap.
+A small WebGL horror prototype: explore a dark baseplate as a tall cylinder character using WASD or the arrow keys. Move the mouse after entering to rotate the view.
 
-It uses a CDN-loaded Three.js module, so there is no build step.
+It loads Three.js from a CDN and needs no build step.
