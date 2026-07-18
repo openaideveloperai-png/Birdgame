@@ -9,11 +9,11 @@
 </head>
 <body>
   <main class="game-shell">
-    <canvas id="game" aria-label="First-person spatial puzzle prototype"></canvas>
+    <canvas id="game" aria-label="Third-person spatial puzzle game"></canvas>
 
     <header class="hud">
       <div class="wordmark"><span class="mark"></span> PARALLAX <small>TEST 01</small></div>
-      <div class="objective"><span>OBJECTIVE</span><strong id="objective">Place the cube on the receiver</strong></div>
+      <div class="objective"><span>OBJECTIVE</span><strong id="objective">Place an enlarged cube on the receiver</strong></div>
     </header>
 
     <div class="reticle" aria-hidden="true"><i></i><i></i></div>
@@ -21,14 +21,15 @@
     <div id="held-readout" class="held-readout">MASS <b>—</b> · SCALE <b id="scale">1.00</b></div>
 
     <section id="intro" class="panel">
-      <p class="eyebrow">PERSPECTIVE ENGINE // BUILD 0.1</p>
+      <p class="eyebrow">PERSPECTIVE ENGINE // BUILD 0.2</p>
       <h1>Reality is<br><em>relative.</em></h1>
-      <p>Move through the test chamber. Pick up the calibration cube, change its apparent size with distance, and use it to open the exit.</p>
+      <p>Guide the surveyor through the chamber. Enlarge the calibration cube, throw it onto the powered receiver, and escape through the spatial fold.</p>
       <div class="controls">
         <span><kbd>WASD</kbd> Move</span>
-        <span><kbd>MOUSE</kbd> Look</span>
+        <span><kbd>MOUSE</kbd> Orbit camera</span>
         <span><kbd>E</kbd> Grab / drop</span>
-        <span><kbd>WHEEL</kbd> Push / pull</span>
+        <span><kbd>WHEEL</kbd> Scale object</span>
+        <span><kbd>CLICK</kbd> Throw object</span>
         <span><kbd>SHIFT</kbd> Sprint</span>
       </div>
       <button id="enter" type="button">ENTER THE CHAMBER <span>→</span></button>
@@ -37,11 +38,11 @@
     <section id="complete" class="panel complete hidden">
       <p class="eyebrow">CALIBRATION COMPLETE</p>
       <h2>You bent<br>the room.</h2>
-      <p>The first chamber is stable. The prototype now has movement, collision, object manipulation, perspective scaling, triggers, and spatial folds.</p>
+      <p>The first chamber is stable. The prototype now has third-person movement, momentum physics, perspective scaling, dynamic lighting, triggers, and spatial folds.</p>
       <button id="restart" type="button">RUN IT AGAIN <span>↻</span></button>
     </section>
 
-    <aside class="footer-note">ESC TO RELEASE CURSOR <span>•</span> E TO INTERACT</aside>
+    <aside class="footer-note">ESC TO RELEASE CURSOR <span>•</span> CLICK TO THROW</aside>
     <div id="toast" class="toast"></div>
     <div class="vignette"></div>
   </main>
