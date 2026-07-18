@@ -1,27 +1,50 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#061b33" />
-    <title>Skywing — WebGL Bird Game</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <main class="game-shell">
-      <canvas id="game" aria-label="Skywing game"></canvas>
-      <section class="hud" aria-live="polite">
-        <p class="brand">SKYWING</p>
-        <p class="score-label">SCORE <span id="score">0</span></p>
-      </section>
-      <section id="panel" class="panel">
-        <p class="eyebrow">WEBGL FLIGHT RUNNER</p>
-        <h1 id="title">Take flight</h1>
-        <p id="message">Press <kbd>Space</kbd>, <kbd>↑</kbd>, or tap to flap through the canyon.</p>
-        <button id="start" type="button">Fly</button>
-      </section>
-      <p class="hint">SPACE / ↑ / TAP TO FLAP</p>
-    </main>
-    <script type="module" src="main.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d0f">
+  <title>PARALLAX // Spatial Test Chamber</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game-shell">
+    <canvas id="game" aria-label="First-person spatial puzzle prototype"></canvas>
+
+    <header class="hud">
+      <div class="wordmark"><span class="mark"></span> PARALLAX <small>TEST 01</small></div>
+      <div class="objective"><span>OBJECTIVE</span><strong id="objective">Place the cube on the receiver</strong></div>
+    </header>
+
+    <div class="reticle" aria-hidden="true"><i></i><i></i></div>
+    <div id="interaction" class="interaction" aria-live="polite"></div>
+    <div id="held-readout" class="held-readout">MASS <b>—</b> · SCALE <b id="scale">1.00</b></div>
+
+    <section id="intro" class="panel">
+      <p class="eyebrow">PERSPECTIVE ENGINE // BUILD 0.1</p>
+      <h1>Reality is<br><em>relative.</em></h1>
+      <p>Move through the test chamber. Pick up the calibration cube, change its apparent size with distance, and use it to open the exit.</p>
+      <div class="controls">
+        <span><kbd>WASD</kbd> Move</span>
+        <span><kbd>MOUSE</kbd> Look</span>
+        <span><kbd>E</kbd> Grab / drop</span>
+        <span><kbd>WHEEL</kbd> Push / pull</span>
+        <span><kbd>SHIFT</kbd> Sprint</span>
+      </div>
+      <button id="enter" type="button">ENTER THE CHAMBER <span>→</span></button>
+    </section>
+
+    <section id="complete" class="panel complete hidden">
+      <p class="eyebrow">CALIBRATION COMPLETE</p>
+      <h2>You bent<br>the room.</h2>
+      <p>The first chamber is stable. The prototype now has movement, collision, object manipulation, perspective scaling, triggers, and spatial folds.</p>
+      <button id="restart" type="button">RUN IT AGAIN <span>↻</span></button>
+    </section>
+
+    <aside class="footer-note">ESC TO RELEASE CURSOR <span>•</span> E TO INTERACT</aside>
+    <div id="toast" class="toast"></div>
+    <div class="vignette"></div>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
 </html>
